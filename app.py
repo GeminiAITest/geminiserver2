@@ -95,14 +95,13 @@ def ask_gemini_nickname():
     )
 
     generation_config = {
-        "response_mime_type": "application/json",
-        "response_schema": {
-            "type": "OBJECT",
-            "properties": {
-                "nickname": {"type": "STRING"}
-            },
-            "required": ["nickname"],
-            "additionalProperties": False
+       "response_mime_type": "application/json",
+    "response_schema": {
+        "type": "object",
+        "properties": {
+            "nickname": {"type": "string"}
+        },
+        "required": ["nickname"]
         }
     }
 
