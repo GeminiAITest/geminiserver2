@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import random
 import datetime
@@ -14,7 +15,6 @@ def health():
 # ---------------- Gemini 준비 ----------------
 global_gemini_model = None
 try:
-    # 여러 키 이름 지원(있는 것 먼저 사용)
     api_key = (
         os.environ.get("GOOGLE_API_KEY")
         or os.environ.get("GEMINI_API_KEY")
@@ -33,26 +33,60 @@ TAGS = ["Gong", "Bang", "Che", "Critical", "Magic"]
 def choose_random_tag_and_score():
     return random.choice(TAGS), random.randint(1, 5)
 
-# ---------------- 로컬 백업 닉네임 ----------------
-LAUGH = ["ㅋㅋ", "ㅎㅎ", "ㅋ", ""]
-DIF_MAP = {
-    "easy": ["뉴비", "초보감성", "귀염뽀짝"],
-    "normal": ["국룰러", "중간맛", "평타장인"],
-    "hard": ["근성러", "빡집중", "손괴물"],
-    "hell": ["지옥행", "피눈물", "멘탈깎임"],
-}
+# ---------------- 잼민체 닉네임 길이 강제(≤8자) ----------------
+def _compress(s: str) -> str:
+    if not s:
+        return ""
+    s = s.strip()
+    # 괄호류/슬래시 제거
+    s = re.sub(r"[\(\)\[\]\{\}<>/\\]", "", s)
+    # 과도한 반복 축약
+    s = re.sub(r"ㅋ{3,}", "ㅋㅋ", s)
+    s = re.sub(r"ㅎ{3,}", "ㅎㅎ", s)
+    s = re.sub(r"\?{3,}", "??", s)
+    # 공백 한 번 정리
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+def shorten_nickname(nick: str, max_len: int = 8) -> str:
+    s = _compress(nick)
+    # 공백 제거 우선 (공백 없이 6~8자 목표)
+    s = s.replace(" ", "")
+    # 너무 길면 약한 후순위 토큰부터 제거
+    for token in ["??", "ㅋㅋ", "ㅎ", "ㅋ"]:
+        while len(s) > max_len and token in s:
+            s = s.replace(token, "", 1)
+    # 그래도 길면 하드 컷
+    if len(s) > max_len:
+        s = s[:max_len]
+    # 끝이 밋밋하면 가벼운 타격감 추가(여유 있을 때만)
+    if s and s[-1] not in "ㅋ?ㅎ" and len(s) < max_len:
+        s = (s + "ㅋ")[:max_len]
+    # 완전 빈 문자열 방지
+    return s or "ㅇㅋㅋㅋ"
+
+# ---------------- 로컬 백업 닉네임 (짧게 생성) ----------------
+ALIASES = ["살찐대추", "물복숭아", "케찹맨", "젤리과일", "토마맅", "톼마토"]
+MAP_HINTS = ["집게발", "기계손", "보스발톱", "장난감집게", "클로"]
+
+def map_hint_from(name: str | None) -> str:
+    n = (name or "")
+    if "인형" in n or "뽑기" in n:
+        return random.choice(["집게발", "기계손", "장난감집게"])
+    if "용암" in n:
+        return "용광탕"
+    if "빙" in n or "얼음" in n:
+        return "미끄럼판"
+    return random.choice(MAP_HINTS)
 
 def local_fallback_nickname(map_name, difficulty, player_nickname, game_result):
-    diff = (difficulty or "").lower()
-    tags = DIF_MAP.get(diff, ["챌린저", "도전자", "돌격대"])
-    # 패배면 '쫄보' 프리픽스, 승리면 난이도 테마 중 하나
-    prefix = "쫄보" if (str(game_result).upper() == "LOSE") else random.choice(tags)
-    laugh = random.choice(LAUGH)
-    core = player_nickname or "플레이어"
-    tail = f"{map_name}러" if map_name else "겜러"
-    # (요청은 단순 치환이므로 기존 스타일 유지)
-    nick = f"{prefix} {core}{laugh} ({tail})"
-    return nick.strip()
+    alias = random.choice(ALIASES)
+    hint = map_hint_from(map_name)
+    if str(game_result).upper() == "WIN":
+        base = f"{hint}캐리{alias}ㅋㅋ"
+    else:
+        base = f"{hint}털림{alias}??"
+    return shorten_nickname(base, 8)
 
 # ---------------- 메인 엔드포인트 ----------------
 @app.post("/api/ask")
@@ -64,18 +98,18 @@ def ask_gemini_nickname():
     map_name = data.get("map_name")
     difficulty = data.get("difficulty")
     player_nickname = data.get("player_nickname")
-    game_result = (data.get("game_result") or "").upper()  # WIN / LOSE 기대
+    game_result = (data.get("game_result") or "").upper()  # WIN / LOSE
 
-    # 필수 필드 검증
+    # 필수 검증
     if not (isinstance(player_nickname, str) and player_nickname.strip()):
         return jsonify({"error": "Missing or invalid 'player_nickname'"}), 400
     if game_result not in ("WIN", "LOSE"):
         return jsonify({"error": "game_result must be WIN or LOSE"}), 400
 
-    # 태그/점수는 서버에서 완전 랜덤
+    # 태그/점수는 서버에서 랜덤
     tag, score = choose_random_tag_and_score()
 
-    # 모델이 없으면 바로 로컬 백업
+    # 모델이 없으면 로컬 백업
     if global_gemini_model is None:
         nickname = local_fallback_nickname(map_name, difficulty, player_nickname, game_result)
         return jsonify({
@@ -86,34 +120,30 @@ def ask_gemini_nickname():
             "nickname": nickname, "tag": tag, "score": score
         })
 
-    # --------- 프롬프트: 잼민체(짧고 직격), 결과 반영(WIN/LOSE) ---------
+    # --------- 프롬프트: 잼민체, 공백 없이 6~8자(최대 8자) ---------
+    # 닉/맵 원문 직표기 금지(암시만), 괄호 금지. 결과에 따라 톤 분기.
     prompt = (
-        "너는 한국 초딩 잼민이 페르소나다. 짧고 얄밉게 도발한다. "
-        "인터넷 밈체(ㅋㅋ, ㅎ, ??, ㄷㄷ)와 철자깨기(넘, 새키, 못갔쥬, 쥬??)를 적극 사용하라. "
-        "욕설은 금지하지만 짭욕은 허용된다.\n\n"
-        "규칙:\n"
-        "1) 출력은 JSON 하나, 필드명은 nickname만.\n"
-        "2) 플레이어 닉네임/맵 이름은 원문 그대로 쓰지 말고, 음식·과일·밈·별명으로 비틀어 자연스럽게 녹여 쓸 것.\n"
-        "3) 맵/난이도는 그대로 말하지 말고 잼민이식 상황극으로 변형해 암시만 줄 것. "
-        "   예: hard→하드못갔쥬, 인형뽑기맵→집게발.\n"
-        "4) 게임 결과가 'win'이면 자뻑/허세, 'lose'면 찔리게 도발.\n"
-        "5) 별명은 1문장, 8자이내. 짧고 직격타, 1~2번 도발만. 완벽한 문장은 금지, 오탈자/붙여쓰기/쥬?? 활용.\n\n"
-        "[입력]\n"
-        f"- 맵 이름: {map_name}\n"
+        "잼민체 별명 1문장 생성. 공백 없이 6~8자(최대 8자). "
+        "짧고 직격. ㅋㅋ/??/ㅎ·철자깨기(못갔쥬/넘/새키 등) 허용, 욕설 금지. "
+        "닉·맵 원문 직표기 금지(음식/밈으로 비틀어 암시), 괄호 금지. "
+        "hard→하드못갔쥬, 인형뽑기→집게발 같은 식. "
+        f"결과가 '{'win' if game_result=='WIN' else 'lose'}'이면: win=자뻑/허세, lose=찔리게 도발.\n\n"
+        f"- 맵: {map_name}\n"
         f"- 난이도: {difficulty}\n"
-        f"- 플레이어 닉네임: {player_nickname}\n"
+        f"- 닉네임: {player_nickname}\n"
         f"- 결과: {game_result}\n"
+        'JSON으로 {"nickname":"..."}만 출력.'
     )
 
     generation_config = {
         "response_mime_type": "application/json",
         "response_schema": {
             "type": "object",
-            "properties": {
-                "nickname": {"type": "string"}
-            },
+            "properties": {"nickname": {"type": "string"}},
             "required": ["nickname"]
-        }
+        },
+        # 살짝 창의성 유지
+        "temperature": 1.0
     }
 
     try:
@@ -124,6 +154,9 @@ def ask_gemini_nickname():
         nickname = obj.get("nickname")
         if not nickname or not isinstance(nickname, str):
             raise ValueError("Invalid nickname from model")
+        # ★ 길이 강제 폴리싱
+        nickname = shorten_nickname(nickname, 8)
+
     except Exception as e:
         print(f"[{datetime.datetime.now()}] Gemini 처리 오류 → 로컬 백업: {e}")
         nickname = local_fallback_nickname(map_name, difficulty, player_nickname, game_result)
@@ -134,8 +167,8 @@ def ask_gemini_nickname():
             "player_nickname": player_nickname, "game_result": game_result
         },
         "nickname": nickname,
-        "tag": tag,         # 서버가 난수로 생성
-        "score": score      # 서버가 난수로 생성
+        "tag": tag,
+        "score": score
     })
 
 if __name__ == "__main__":
