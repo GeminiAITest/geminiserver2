@@ -14,7 +14,7 @@ def health():
 # ---------------- Gemini 준비 ----------------
 global_gemini_model = None
 try:
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    genai.configure(api_key=os.environ.get("OPENAI_API_KEY"))
     global_gemini_model = genai.GenerativeModel("gemini-1.5-flash")
     print("Gemini 모델 로드 완료")
 except Exception as e:
@@ -131,5 +131,6 @@ def ask_gemini_nickname():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
 
