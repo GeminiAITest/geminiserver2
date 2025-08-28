@@ -7,7 +7,10 @@ from flask import Flask, request, jsonify, Response
 import google.generativeai as genai
 
 app = Flask(__name__)
-
+@app.get("/")
+def root():
+    return "Server is running!", 200
+    
 @app.get("/health")
 def health():
     return Response(status=204)
@@ -174,3 +177,4 @@ def ask_gemini_nickname():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
