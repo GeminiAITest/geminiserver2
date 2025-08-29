@@ -69,17 +69,17 @@ def shorten_nickname(nick: str, max_len: int = 8) -> str:
     return s or "ㅇㅋㅋㅋ"
 
 # ---------------- 로컬 백업 닉네임 (짧게 생성) ----------------
-ALIASES = ["살찐대추", "물복숭아", "케찹맨", "젤리과일", "토마맅", "톼마토"]
+ALIASES = ["하타치ㅋ", "상타치", "케찹맨..", "쫄?", "거지근성ㅋ", "불쌍한넘"]
 MAP_HINTS = ["집게발", "기계손", "보스발톱", "장난감집게", "클로"]
 
 def map_hint_from(name: str | None) -> str:
     n = (name or "")
     if "인형" in n or "뽑기" in n:
         return random.choice(["집게발", "기계손", "장난감집게"])
-    if "용암" in n:
-        return "용광탕"
-    if "빙" in n or "얼음" in n:
-        return "미끄럼판"
+    if "강의" in n:
+        return random.choice(["교수의노예", "재수강생", "학점따개"])
+    if "스트릿" in n or "스트" in n:
+        return random.choice(["이빨밀당녀(놈)", "스윙즈", "패션X자"])
     return random.choice(MAP_HINTS)
 
 def local_fallback_nickname(map_name, difficulty, player_nickname, game_result):
@@ -177,4 +177,5 @@ def ask_gemini_nickname():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
