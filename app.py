@@ -12,9 +12,9 @@ app = Flask(__name__)
 global_gemini_model = None
 try:
     # API 키는 반드시 환경 변수에서 로드해야 합니다.
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY 환경 변수가 설정되지 않았습니다.")
+        raise ValueError("OPENAI_API_KEY 환경 변수가 설정되지 않았습니다.")
     genai.configure(api_key=api_key)
     global_gemini_model = genai.GenerativeModel("gemini-1.5-flash")
     print("Gemini 모델 로드 완료")
@@ -76,7 +76,7 @@ def summarize_history(history: dict) -> str:
 def local_fallback_response(game_result):
     """Gemini API 호출 실패 시 사용할 백업 응답을 생성합니다."""
     alias = random.choice(["하타치ㅋ", "상타치", "케찹맨..", "쫄?", "거지근성ㅋ"])
-    hint = random.choice(["집게발", "기계손", "보스발톱", "장난감집게"])
+    hint = random.choice(["집게발", "기계손", "재수강생", "장난감집게","후배","네가지"])
     base = f"{hint}털림{alias}??"
     if str(game_result).upper() == "WIN":
         base = f"{hint}캐리{alias}ㅋㅋ"
@@ -192,3 +192,4 @@ if __name__ == "__main__":
     # 서버 실행
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
