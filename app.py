@@ -12,7 +12,7 @@ app = Flask(__name__)
 global_gemini_model = None
 try:
     # API key must be loaded from environment variables.
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable not set.")
     genai.configure(api_key=api_key)
@@ -74,7 +74,7 @@ def summarize_history(history: dict) -> str:
 def local_fallback_response(game_result):
     """Generates a backup response for when the Gemini API call fails."""
     alias = random.choice(["하타치ㅋ", "상타치", "케찹맨..", "쫄?", "거지근성ㅋ"])
-    hint = random.choice(["집게발", "기계손", "보스발톱", "장난감집게"])
+    hint = random.choice(["집게발", "쌩신인", "교수노예", "장난감집게","SM데뷔","JYP출신"])
     base = f"{hint}털림{alias}??"
     if str(game_result).upper() == "WIN":
         base = f"{hint}캐리{alias}ㅋㅋ"
@@ -195,3 +195,4 @@ You MUST respond ONLY in the following JSON format. Absolutely no explanations.
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
