@@ -159,6 +159,7 @@ As a game AI, your role is to analyze a player's records to update their 'Jammin
 2. Update Persona:
    - Merge the 'Latest Information' with the 'Past Persona' to summarize the player's characteristics in 1-2 sentences.
    - Reflect the tone or personality from the boss dialogue in the persona.
+   - [Crucial Rule] You MUST base your summary ONLY on the facts provided in the '[Analysis Data]' section. Do not invent any details about maps, classes, or play styles that are not mentioned. If cumulative data is absent, focus only on the 'Just Played' information.
 
 [Output Format]
 You MUST respond ONLY in the following JSON format. Absolutely no explanations.
@@ -195,5 +196,6 @@ You MUST respond ONLY in the following JSON format. Absolutely no explanations.
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
 
