@@ -14,7 +14,7 @@ try:
     # API key must be loaded from environment variables.
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set.")
+        raise ValueError("OPENAI_API_KEY environment variable not set.")
     genai.configure(api_key=api_key)
     global_gemini_model = genai.GenerativeModel("gemini-1.5-flash")
     print("Gemini model loaded successfully")
@@ -195,4 +195,5 @@ You MUST respond ONLY in the following JSON format. Absolutely no explanations.
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
