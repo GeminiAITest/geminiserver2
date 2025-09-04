@@ -83,7 +83,11 @@ def local_fallback_response(game_result):
         "nickname": shorten_nickname(base, 8),
         "updated_persona": "Persona update failed (backup response)"
     }
-
+    
+@app.get("/health")
+def health_check():
+    """Returns a simple health check response."""
+    return jsonify({"status": "healthy"}), 200
 # ---------------- Main API Endpoint ----------------
 @app.post("/api/ask")
 def ask_gemini_nickname_with_persona():
@@ -111,10 +115,10 @@ def ask_gemini_nickname_with_persona():
         # 2. Cumulative play history (parsed from string)
         play_history = {
             "map_stats": {
-                "강의실": int(parts[4]), "인형뽑기": int(parts[5]), "스트릿": int(parts[6]),
+                "인형뽑기": int(parts[4]), "강의실": int(parts[5]), "스트릿": int(parts[6]),
             },
             "class_stats": {
-                "법사": int(parts[7]), "검사": int(parts[8]), "해적": int(parts[9]), "궁수": int(parts[10]),
+                "검사": int(parts[7]), "궁수": int(parts[8]), "법사": int(parts[9]), "해적": int(parts[10]),
             },
             "difficulty_stats": {
                 "hard": int(parts[11]), "normal": int(parts[12]), "easy": int(parts[13]),
@@ -196,6 +200,7 @@ You MUST respond ONLY in the following JSON format. Absolutely no explanations.
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
 
 
