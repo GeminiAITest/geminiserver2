@@ -8,6 +8,13 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 
+from flask import Response  # 맨 위 import에 없으면 추가
+
+@app.get("/health")
+def health_check():
+    """Returns a simple health check response."""
+    return return Response(status=204)
+
 # ---------------- Gemini Setup ----------------
 global_gemini_model = None
 try:
@@ -84,10 +91,7 @@ def local_fallback_response(game_result):
         "updated_persona": "Persona update failed (backup response)"
     }
     
-@app.get("/health")
-def health_check():
-    """Returns a simple health check response."""
-    return jsonify({"status": "healthy"}), 200
+
 # ---------------- Main API Endpoint ----------------
 @app.post("/api/ask")
 def ask_gemini_nickname_with_persona():
@@ -200,6 +204,7 @@ You MUST respond ONLY in the following JSON format. Absolutely no explanations.
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(debug=True, host="0.0.0.0", port=port)
+
 
 
 
